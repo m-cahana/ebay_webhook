@@ -1,18 +1,22 @@
 export default async function handler(req, res) {
   if (req.method === "POST") {
-    try {
-      console.log("✅ Received eBay Marketplace Account Deletion Event:");
-      console.log(JSON.stringify(req.body, null, 2));
+    const body = req.body;
 
-      // Do something with the data, e.g., log to a DB or trigger an email
-
-      res.status(200).send("Event received");
-    } catch (error) {
-      console.error("❌ Error handling event:", error);
-      res.status(500).send("Internal Server Error");
+    // OPTIONAL: Verify the incoming token
+    const EXPECTED_TOKEN = process.env.EBAY_VERIFICATION_TOKEN;
+    if (body.verificationToken && body.verificationToken !== EXPECTED_TOKEN) {
+      return res.status(403).end("Invalid verification token");
     }
-  } else {
-    res.setHeader("Allow", "POST");
-    res.status(405).send("Method Not Allowed");
+
+    if (body.challengeCode) {
+      // Respond to verification challenge
+      return res.status(200).json({ challengeResponse: body.challengeCode });
+    }
+
+    // Handle real account deletion event here (optional)
+    console.log("Received account deletion event:", body);
+    return res.status(204).end(); // Success with no content
   }
+
+  res.status(405).end(); // Method Not Allowed
 }
